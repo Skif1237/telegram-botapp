@@ -1,151 +1,155 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Розыгрыш в Telegram</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      background: var(--tg-theme-bg-color, #23272e);
-      color: var(--tg-theme-text-color, #fff);
-      font-family: 'Segoe UI', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      transition: background 0.3s;
-    }
-    .container {
-      background: rgba(40,44,52,0.95);
-      border-radius: 24px;
-      padding: 32px 24px;
-      box-shadow: 0 6px 32px 0 rgba(0,0,0,0.25);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 320px;
-      max-width: 360px;
-      margin: 24px 0;
-      animation: showUp 0.7s cubic-bezier(.21,2,.56,.83);
-    }
-    @keyframes showUp {
-      0% { transform: scale(0.9) translateY(40px); opacity:0; }
-      100% { transform: scale(1) translateY(0); opacity:1; }
-    }
-    .dice {
-      font-size: 72px;
-      margin-bottom: 18px;
-      animation: diceSpin 0.9s cubic-bezier(.21,2,.56,.83);
-    }
-    @keyframes diceSpin {
-      0% { transform: rotate(-120deg) scale(0.6);}
-      100% { transform: rotate(0) scale(1);}
-    }
-    .status-success { color: #60db7b; }
-    .status-error { color: #ff5656; }
-    .channels-list {
-      margin: 18px 0 24px;
-      width: 100%;
-    }
-    .channels-list li {
-      margin-bottom: 6px;
-      font-size: 1.05em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .channels-list .status {
-      font-size: 1em;
-    }
-    button {
-      background: #5f8fff;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 0;
-      width: 100%;
-      font-size: 1.08em;
-      cursor: pointer;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.12);
-      margin-top: 12px;
-      transition: background 0.2s;
-    }
-    button:active {
-      background: #3867d6;
-    }
-    .subtitle {
-      color: var(--tg-theme-hint-color, #bcbcbc);
-      font-size: 1em;
-      margin-bottom: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Проверка подписки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background: #282c34;
+            color: #fff;
+            font-family: 'Montserrat', Arial, sans-serif;
+            margin: 0; padding: 0;
+        }
+        .centered {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            background: #23272f;
+            border-radius: 20px;
+            padding: 36px 36px 24px 36px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+            min-width: 340px;
+            max-width: 400px;
+            text-align: center;
+        }
+        .card img {
+            width: 88px;
+            margin-bottom: 14px;
+        }
+        .channels {
+            text-align: left;
+            margin: 18px 0 22px 0;
+        }
+        .channels .ok {
+            color: #4caf50; font-weight: bold;
+        }
+        .channels .fail {
+            color: #f44336; font-weight: bold;
+        }
+        .btn {
+            background: #5a7cff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 0;
+            width: 100%;
+            font-size: 1.15rem;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        .btn:active { background: #3254e7; }
+        .success {
+            color: #7fff92;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 10px 0 12px 0;
+        }
+        .error {
+            color: #ff8080;
+            font-size: 1.05em;
+            margin: 8px 0 10px 0;
+        }
+    </style>
 </head>
 <body>
-  <div class="container" id="main">
-    <div class="dice">🎲</div>
-    <div id="status-text" class="subtitle">Проверяем подписку на каналы...</div>
-    <ul class="channels-list" id="channels"></ul>
-    <button id="check-btn" style="display:none;">Проверить снова</button>
-    <button id="participate-btn" style="display:none;">Участвовать</button>
-  </div>
-  <script>
-    // Пример: получить параметры от бота (initData, каналы, статус)
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+<div class="centered">
+    <div class="card" id="main-card">
+        <img src="https://cdn-icons-png.flaticon.com/512/3990/3990379.png" alt="Dice">
+        <div id="status-area">
+            <div class="error" id="status-msg">Проверяем подписку...</div>
+            <div class="channels" id="channels-list"></div>
+        </div>
+        <button class="btn" id="check-btn" style="display:none;">Проверить снова</button>
+        <button class="btn" id="close-btn" style="display:none;background:#6fb05a;">Закрыть</button>
+    </div>
+</div>
+<script>
+    // Инициализация Telegram WebApp API
+    let tg = window.Telegram.WebApp;
+    tg.expand();
 
-    // Для теста. В проде — получай эти данные через initData / fetch с backend
-    let channels = [
-      {title: 'Канал 1', username: 'testchannel1', subscribed: false},
-      {title: 'Канал 2', username: 'testchannel2', subscribed: true},
-    ];
+    // Получим параметры розыгрыша (например, через URL)
+    // Пример: https://skif1237.github.io/telegram-botapp/?giveaway_id=123
+    function getQueryParam(name) {
+        let url = new URL(window.location.href);
+        return url.searchParams.get(name);
+    }
+    const giveaway_id = getQueryParam('giveaway_id');
+    // user_id из Telegram API
+    let user_id = tg.initDataUnsafe?.user?.id || null;
 
-    // Имитация проверки (замени на свой fetch)
-    function renderChannels(channels) {
-      const ul = document.getElementById('channels');
-      ul.innerHTML = '';
-      channels.forEach(ch => {
-        ul.innerHTML += `
-          <li>
-            <span class="status">${ch.subscribed ? '✅' : '❌'}</span>
-            <a href="https://t.me/${ch.username}" target="_blank">${ch.title}</a>
-          </li>
-        `;
-      });
+    // Проверка подписки через backend
+    async function checkSubscription() {
+        document.getElementById("status-msg").innerText = "Проверяем подписку...";
+        document.getElementById("channels-list").innerHTML = "";
+        document.getElementById("check-btn").style.display = "none";
+        document.getElementById("close-btn").style.display = "none";
+
+        // Сделать реальный запрос на backend
+        // URL backend-а ЗАМЕНИ на свой!
+        let backend_url = `https://your-backend.com/check_subscription`;
+        let payload = {
+            user_id: user_id,
+            giveaway_id: giveaway_id,
+            // Можно передать еще что-то из tg.initDataUnsafe
+            // auth_data: tg.initData
+        };
+
+        try {
+            let res = await fetch(backend_url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            let data = await res.json();
+
+            // Пример data: {ok: false, not_subscribed: [{title: "...", url: "..."}, ...], subscribed: [...]}
+            if (data.ok) {
+                document.getElementById("status-msg").innerHTML = "<span class='success'>🎉 Теперь Вы участвуете в розыгрыше!</span>";
+                document.getElementById("channels-list").innerHTML = "";
+                document.getElementById("close-btn").style.display = "";
+            } else {
+                document.getElementById("status-msg").innerHTML = "<span class='error'>❗ Вы не подписаны на все каналы.</span>";
+                let list = "";
+                if (data.not_subscribed && data.not_subscribed.length) {
+                    data.not_subscribed.forEach(ch =>
+                        list += `<div class="fail">✖ <a href="${ch.url}" target="_blank" style="color:#f44336">${ch.title}</a></div>`
+                    );
+                }
+                if (data.subscribed && data.subscribed.length) {
+                    data.subscribed.forEach(ch =>
+                        list += `<div class="ok">✔ <a href="${ch.url}" target="_blank" style="color:#7fff92">${ch.title}</a></div>`
+                    );
+                }
+                document.getElementById("channels-list").innerHTML = list;
+                document.getElementById("check-btn").style.display = "";
+            }
+        } catch (e) {
+            document.getElementById("status-msg").innerText = "Ошибка соединения с сервером. Попробуйте ещё раз.";
+            document.getElementById("check-btn").style.display = "";
+        }
     }
 
-    function showStatus(text, ok=false) {
-      const s = document.getElementById('status-text');
-      s.textContent = text;
-      s.className = 'subtitle ' + (ok ? 'status-success' : 'status-error');
-    }
+    document.getElementById("check-btn").onclick = checkSubscription;
+    document.getElementById("close-btn").onclick = () => { tg.close(); };
 
-    function updateUI() {
-      renderChannels(channels);
-      const all = channels.every(c=>c.subscribed);
-      document.getElementById('participate-btn').style.display = all ? '' : 'none';
-      document.getElementById('check-btn').style.display = all ? 'none' : '';
-      showStatus(all ? '🎉 Все условия выполнены! Можно участвовать.' : '❗ Вы не подписаны на все каналы.');
-    }
-
-    document.getElementById('check-btn').onclick = () => {
-      // todo: сделать реальную проверку через fetch на твой backend
-      // channels = ...
-      updateUI();
-      tg.HapticFeedback.notificationOccurred("warning");
-    };
-
-    document.getElementById('participate-btn').onclick = () => {
-      showStatus('🥳 Теперь вы участвуете в розыгрыше!', true);
-      tg.HapticFeedback.notificationOccurred("success");
-      // tg.sendData('join') // в проде: отправить серверу!
-    };
-
-    // Стартовая отрисовка
-    updateUI();
-  </script>
+    window.onload = checkSubscription;
+</script>
 </body>
 </html>
