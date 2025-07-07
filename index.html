@@ -1,155 +1,136 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Проверка подписки</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            background: #282c34;
-            color: #fff;
-            font-family: 'Montserrat', Arial, sans-serif;
-            margin: 0; padding: 0;
-        }
-        .centered {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .card {
-            background: #23272f;
-            border-radius: 20px;
-            padding: 36px 36px 24px 36px;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.25);
-            min-width: 340px;
-            max-width: 400px;
-            text-align: center;
-        }
-        .card img {
-            width: 88px;
-            margin-bottom: 14px;
-        }
-        .channels {
-            text-align: left;
-            margin: 18px 0 22px 0;
-        }
-        .channels .ok {
-            color: #4caf50; font-weight: bold;
-        }
-        .channels .fail {
-            color: #f44336; font-weight: bold;
-        }
-        .btn {
-            background: #5a7cff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 14px 0;
-            width: 100%;
-            font-size: 1.15rem;
-            margin-top: 8px;
-            cursor: pointer;
-            transition: background .2s;
-        }
-        .btn:active { background: #3254e7; }
-        .success {
-            color: #7fff92;
-            font-size: 1.1em;
-            font-weight: 600;
-            margin: 10px 0 12px 0;
-        }
-        .error {
-            color: #ff8080;
-            font-size: 1.05em;
-            margin: 8px 0 10px 0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Розыгрыш – Проверка подписки</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <style>
+    body {
+      background: #2b2d33;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Inter', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .centerbox {
+      background: #27282e;
+      border-radius: 24px;
+      box-shadow: 0 6px 48px #0007;
+      padding: 40px 40px 30px;
+      min-width: 350px;
+      max-width: 95vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      animation: fadein .8s cubic-bezier(.2,.7,.3,1);
+    }
+    @keyframes fadein { from {opacity: 0; transform: translateY(50px);} to {opacity: 1; transform: none;} }
+    .cube-anim {
+      width: 68px; height: 68px; margin-bottom: 6px;
+      transition: transform .25s;
+    }
+    .cube-anim.spin { animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(1turn); } }
+    .msg-error {
+      color: #ff5555; font-size: 1.1em;
+      margin-bottom: 6px; text-align: center;
+    }
+    .msg-success {
+      color: #50fa7b; font-size: 1.13em;
+      margin-bottom: 6px; text-align: center;
+    }
+    .channels-list {
+      width: 100%; margin: 0 0 12px;
+    }
+    .channel-row {
+      display: flex; align-items: center; gap: 9px;
+      margin: 6px 0; font-size: 1.08em;
+    }
+    .channel-row .chan-status {
+      font-size: 1.26em; width: 22px; display: inline-block; text-align: center;
+    }
+    .channel-row .chan-link {
+      color: #82aaff; text-decoration: none;
+      transition: color .15s;
+    }
+    .channel-row .chan-link:hover { color: #e0e0ff; }
+    .retry-btn, .close-btn {
+      margin-top: 16px;
+      width: 100%; max-width: 300px;
+      padding: 13px 0; border: none; border-radius: 9px;
+      background: #6699ff; color: #fff; font-size: 1.1em; font-weight: 600;
+      cursor: pointer; box-shadow: 0 2px 16px #0002;
+      transition: background .15s;
+    }
+    .retry-btn:active { background: #3366cc; }
+    .close-btn { background: #444b; margin-top: 10px;}
+    .close-btn:active { background: #222a; }
+    @media (max-width: 600px) {
+      .centerbox { padding: 18px 4vw 20px; min-width: 0; }
+      .retry-btn, .close-btn { font-size: 1em; }
+    }
+  </style>
 </head>
 <body>
-<div class="centered">
-    <div class="card" id="main-card">
-        <img src="https://cdn-icons-png.flaticon.com/512/3990/3990379.png" alt="Dice">
-        <div id="status-area">
-            <div class="error" id="status-msg">Проверяем подписку...</div>
-            <div class="channels" id="channels-list"></div>
-        </div>
-        <button class="btn" id="check-btn" style="display:none;">Проверить снова</button>
-        <button class="btn" id="close-btn" style="display:none;background:#6fb05a;">Закрыть</button>
-    </div>
-</div>
-<script>
-    // Инициализация Telegram WebApp API
-    let tg = window.Telegram.WebApp;
-    tg.expand();
-
-    // Получим параметры розыгрыша (например, через URL)
-    // Пример: https://skif1237.github.io/telegram-botapp/?giveaway_id=123
-    function getQueryParam(name) {
-        let url = new URL(window.location.href);
-        return url.searchParams.get(name);
+  <div class="centerbox" id="box">
+    <img src="https://cdn-icons-png.flaticon.com/512/2983/2983817.png" width="68" height="68" id="cubeimg" class="cube-anim" alt="Кубик" />
+    <div id="msg" class="msg-error">Ошибка соединения с сервером. Попробуйте ещё раз.</div>
+    <div class="channels-list" id="channels"></div>
+    <button class="retry-btn" id="retrybtn" onclick="retryCheck()">Проверить снова</button>
+    <button class="close-btn" id="closebtn" style="display:none;" onclick="window.Telegram?.WebApp?.close()">Закрыть</button>
+  </div>
+  <script>
+    // --- DEMO DATA: статусы каналов (имитация ответа от бэка) ---
+    const channels = [
+      {title: 'Канал 1', url: 'https://t.me/test_bots_my', subscribed: false},
+      {title: 'Канал 2', url: 'https://t.me/example2', subscribed: true},
+      {title: 'Канал 3', url: 'https://t.me/example3', subscribed: true}
+    ];
+    // --- ФУНКЦИЯ ПЕРЕПРОВЕРКИ (имитация загрузки/проверки) ---
+    async function retryCheck() {
+      showSpinner();
+      // Симуляция “запроса” (1.2s)
+      setTimeout(() => {
+        // Сюда потом будет AJAX к серверу/боту
+        renderChannels(channels); // demo
+      }, 1200);
     }
-    const giveaway_id = getQueryParam('giveaway_id');
-    // user_id из Telegram API
-    let user_id = tg.initDataUnsafe?.user?.id || null;
-
-    // Проверка подписки через backend
-    async function checkSubscription() {
-        document.getElementById("status-msg").innerText = "Проверяем подписку...";
-        document.getElementById("channels-list").innerHTML = "";
-        document.getElementById("check-btn").style.display = "none";
-        document.getElementById("close-btn").style.display = "none";
-
-        // Сделать реальный запрос на backend
-        // URL backend-а ЗАМЕНИ на свой!
-        let backend_url = `https://your-backend.com/check_subscription`;
-        let payload = {
-            user_id: user_id,
-            giveaway_id: giveaway_id,
-            // Можно передать еще что-то из tg.initDataUnsafe
-            // auth_data: tg.initData
-        };
-
-        try {
-            let res = await fetch(backend_url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            let data = await res.json();
-
-            // Пример data: {ok: false, not_subscribed: [{title: "...", url: "..."}, ...], subscribed: [...]}
-            if (data.ok) {
-                document.getElementById("status-msg").innerHTML = "<span class='success'>🎉 Теперь Вы участвуете в розыгрыше!</span>";
-                document.getElementById("channels-list").innerHTML = "";
-                document.getElementById("close-btn").style.display = "";
-            } else {
-                document.getElementById("status-msg").innerHTML = "<span class='error'>❗ Вы не подписаны на все каналы.</span>";
-                let list = "";
-                if (data.not_subscribed && data.not_subscribed.length) {
-                    data.not_subscribed.forEach(ch =>
-                        list += `<div class="fail">✖ <a href="${ch.url}" target="_blank" style="color:#f44336">${ch.title}</a></div>`
-                    );
-                }
-                if (data.subscribed && data.subscribed.length) {
-                    data.subscribed.forEach(ch =>
-                        list += `<div class="ok">✔ <a href="${ch.url}" target="_blank" style="color:#7fff92">${ch.title}</a></div>`
-                    );
-                }
-                document.getElementById("channels-list").innerHTML = list;
-                document.getElementById("check-btn").style.display = "";
-            }
-        } catch (e) {
-            document.getElementById("status-msg").innerText = "Ошибка соединения с сервером. Попробуйте ещё раз.";
-            document.getElementById("check-btn").style.display = "";
-        }
+    // --- ВИЗУАЛИЗАЦИЯ КАНАЛОВ И СТАТУСА ---
+    function renderChannels(data) {
+      const notSubs = data.filter(ch => !ch.subscribed);
+      let html = data.map(ch =>
+        `<div class="channel-row">
+          <span class="chan-status">${ch.subscribed ? '✅' : '❌'}</span>
+          <a href="${ch.url}" class="chan-link" target="_blank">${ch.title}</a>
+        </div>`
+      ).join('');
+      document.getElementById('channels').innerHTML = html;
+      let msg = '';
+      let isSuccess = false;
+      if (data.length && notSubs.length === 0) {
+        msg = '🎉 Теперь вы участвуете в розыгрыше!';
+        isSuccess = true;
+      } else {
+        msg = '❗Вы не подписаны на все каналы, перечитайте условия розыгрыша!';
+      }
+      document.getElementById('msg').textContent = msg;
+      document.getElementById('msg').className = isSuccess ? 'msg-success' : 'msg-error';
+      document.getElementById('closebtn').style.display = isSuccess ? '' : 'none';
     }
-
-    document.getElementById("check-btn").onclick = checkSubscription;
-    document.getElementById("close-btn").onclick = () => { tg.close(); };
-
-    window.onload = checkSubscription;
-</script>
+    function showSpinner() {
+      document.getElementById('msg').textContent = "Проверяем статус подписки...";
+      document.getElementById('msg').className = "msg-error";
+      document.getElementById('channels').innerHTML = "";
+      const img = document.getElementById('cubeimg');
+      img.classList.add('spin');
+      setTimeout(()=>img.classList.remove('spin'), 900); // demo вращение
+    }
+    // Автоматически показываем стартовый статус после загрузки:
+    window.onload = () => { renderChannels(channels); };
+  </script>
 </body>
 </html>
+
