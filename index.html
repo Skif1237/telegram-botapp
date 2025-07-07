@@ -28,26 +28,21 @@
       animation: fadein .8s cubic-bezier(.2,.7,.3,1);
     }
     @keyframes fadein { from {opacity: 0; transform: translateY(50px);} to {opacity: 1; transform: none;} }
-    .darts-box {
-      width: 110px; height: 110px;
-      margin: 0 0 5px 0;
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .bigicon {
+      font-size: 74px;
+      margin: 5px 0 10px 0;
+      line-height: 1.1;
+      opacity: 0;
+      transform: scale(0.6) translateY(20px);
+      animation: iconshow .7s cubic-bezier(.7,1.3,.3,.92) forwards;
+      filter: drop-shadow(0 4px 20px #0004);
+      user-select: none;
     }
-    /* SVG плавно */
-    .dart-anim {
-      transition: transform 1.1s cubic-bezier(.44,2,.31,.93);
-      transform-origin: 70% 92%;
+    .icon-cross { color: #ff4e4e; }
+    .icon-check { color: #4de167; }
+    @keyframes iconshow {
+      to { opacity: 1; transform: scale(1.10) translateY(0);}
     }
-    .dart-miss { /* Промах в бок */
-      transform: translate(30px, -15px) rotate(-20deg) scale(1.09);
-    }
-    .dart-hit { /* В центр */
-      transform: translate(0px, 0px) rotate(-4deg) scale(1.07);
-    }
-    .target-anim { filter: drop-shadow(0 2px 7px #111a); }
     .msg-error {
       color: #ff5555; font-size: 1.13em;
       margin-bottom: 4px; text-align: center;
@@ -70,33 +65,13 @@
     @media (max-width: 600px) {
       .centerbox { padding: 18px 4vw 20px; min-width: 0; }
       .retry-btn, .close-btn { font-size: 1em; }
-      .darts-box { width: 80px; height: 80px; }
+      .bigicon { font-size: 54px;}
     }
   </style>
 </head>
 <body>
   <div class="centerbox">
-    <div class="darts-box">
-      <!-- Мишень -->
-      <svg width="100" height="100" viewBox="0 0 100 100" class="target-anim">
-        <circle cx="50" cy="50" r="45" fill="#fff" opacity="0.12"/>
-        <circle cx="50" cy="50" r="35" fill="#aaa" opacity="0.20"/>
-        <circle cx="50" cy="50" r="22" fill="#e0434a" opacity="0.38"/>
-        <circle cx="50" cy="50" r="13" fill="#fff" opacity="0.66"/>
-        <circle cx="50" cy="50" r="6" fill="#e0434a" />
-      </svg>
-      <!-- Дротик -->
-      <svg id="dartSvg" width="64" height="64" viewBox="0 0 64 64" style="position:absolute; left:16px; top:13px; z-index:2"
-           class="dart-anim dart-miss">
-        <g>
-          <rect x="44" y="29" width="17" height="5" rx="2" fill="#278efc"/>
-          <rect x="37" y="30" width="16" height="3.2" rx="1.7" fill="#3e55d8"/>
-          <polygon points="38,31.5 11,27 16,36 37,33.5" fill="#e0413e"/>
-          <polygon points="13,29 11,27 16,36 16,34" fill="#4284e4"/>
-          <rect x="12.7" y="28.3" width="2.9" height="7" rx="1" fill="#8ed2fe"/>
-        </g>
-      </svg>
-    </div>
+    <div id="mainIcon" class="bigicon icon-cross">✖</div>
     <div id="msg" class="msg-error">
       ❗Вы не подписаны на все каналы, ознакомьтесь с условиями розыгрыша!
     </div>
@@ -104,41 +79,42 @@
     <button class="close-btn" id="closebtn" style="display:none;" onclick="window.Telegram?.WebApp?.close()">Закрыть</button>
   </div>
   <script>
-    // --- Для демо: условия подписки (в реале будет запрос) ---
-    let SUBSCRIBED = false; // <-- меняй это для теста вручную или в функции
+    let SUBSCRIBED = false;
 
-    // --- Показывает правильное состояние и анимацию дартса ---
     function renderState() {
       const msg = document.getElementById('msg');
-      const dart = document.getElementById('dartSvg');
+      const icon = document.getElementById('mainIcon');
       if (SUBSCRIBED) {
-        msg.textContent = '🎯 Теперь вы участвуете в розыгрыше!';
+        msg.textContent = '✔ Теперь вы участвуете в розыгрыше!';
         msg.className = 'msg-success';
-        dart.classList.remove('dart-miss');
-        dart.classList.add('dart-hit');
+        icon.textContent = '✔';
+        icon.className = 'bigicon icon-check';
         document.getElementById('closebtn').style.display = '';
       } else {
         msg.textContent = '❗Вы не подписаны на все каналы, ознакомьтесь с условиями розыгрыша!';
         msg.className = 'msg-error';
-        dart.classList.remove('dart-hit');
-        dart.classList.add('dart-miss');
+        icon.textContent = '✖';
+        icon.className = 'bigicon icon-cross';
         document.getElementById('closebtn').style.display = 'none';
       }
+      // Анимация повторная (при каждом рендере)
+      icon.style.animation = 'none';
+      // Триггерим перерисовку
+      void icon.offsetWidth;
+      icon.style.animation = null;
     }
 
-    // --- Кнопка проверки (имитация async) ---
     function retryCheck() {
       const btn = document.getElementById('retrybtn');
       btn.disabled = true;
       btn.textContent = 'Проверяем...';
       setTimeout(() => {
-        // Тут должен быть реальный запрос к API/боту!
-        // Для примера делаем случайный результат:
+        // Тут будет реальная проверка
         SUBSCRIBED = Math.random() > 0.5;
         renderState();
         btn.disabled = false;
         btn.textContent = 'Проверить снова';
-      }, 1200);
+      }, 1000);
     }
 
     window.onload = () => { renderState(); };
